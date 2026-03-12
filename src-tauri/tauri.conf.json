@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicoco007/tauri/dev-2/crates/tauri-utils/schema.json",
+  "productName": "Clance",
+  "version": "0.1.0",
+  "identifier": "com.clance.app",
+  "build": {
+    "frontendDist": "../src",
+    "devUrl": "http://localhost:1420"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Clance",
+        "width": 300,
+        "height": 500,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "skipTaskbar": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+}
