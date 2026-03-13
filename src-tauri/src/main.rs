@@ -79,13 +79,72 @@ fn get_top_processes(state: State<AppState>) -> Vec<ProcessInfo> {
     procs
 }
 
+#[derive(Serialize, Clone)]
+struct GpuInfo {
+    name: String,
+    usage_percent: u32,
+    memory_total_mb: u64,
+    memory_used_mb: u64,
+    temperature: Option<u32>,
+    available: bool,
+}
+
+#[tauri::command]
+fn get_gpu_info() -> GpuInfo {
+    #[cfg(windows)]
+    {
+        match try_get_nvidia_gpu() {
+            Some(info) => info,
+            None => GpuInfo {
+                name: "No GPU detected".into(),
+                usage_percent: 0,
+                memory_total_mb: 0,
+                memory_used_mb: 0,
+                temperature: None,
+                available: false,
+            },
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        GpuInfo {
+            name: "GPU monitoring not supported".into(),
+            usage_percent: 0,
+            memory_total_mb: 0,
+            memory_used_mb: 0,
+            temperature: None,
+            available: false,
+        }
+    }
+}
+
+#[cfg(windows)]
+fn try_get_nvidia_gpu() -> Option<GpuInfo> {
+    use nvml_wrapper::Nvml;
+    let nvml = Nvml::init().ok()?;
+    let device = nvml.device_by_index(0).ok()?;
+    let utilization = device.utilization_rates().ok()?;
+    let memory = device.memory_info().ok()?;
+    let temp = device
+        .temperature(nvml_wrapper::enum_wrappers::device::TemperatureSensor::Gpu)
+        .ok();
+    Some(GpuInfo {
+        name: device.name().ok().unwrap_or_default(),
+        usage_percent: utilization.gpu,
+        memory_total_mb: memory.total / 1_048_576,
+        memory_used_mb: memory.used / 1_048_576,
+        temperature: temp,
+        available: true,
+    })
+}
+
 fn main() {
     let sys = System::new_all();
     tauri::Builder::default()
         .manage(AppState {
             sys: Mutex::new(sys),
         })
-        .invoke_handler(tauri::generate_handler![get_cpu_info, get_memory_info, get_top_processes])
+        .invoke_handler(tauri::generate_handler![get_cpu_info, get_memory_info, get_top_processes, get_gpu_info])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
