@@ -7,7 +7,64 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="app"><p>Clance is running</p></div>
+  <div id="widget" data-tauri-drag-region>
+    <!-- CPU Section -->
+    <div class="section" id="cpu-section">
+      <div class="section-header">
+        <span class="toggle-icon">&#9660;</span>
+        <span class="section-title">CPU</span>
+        <span class="section-value" id="cpu-value">--%</span>
+      </div>
+      <div class="section-body">
+        <div class="progress-track">
+          <div class="progress-bar" id="cpu-bar"></div>
+        </div>
+        <div class="section-detail" id="cpu-name"></div>
+      </div>
+    </div>
+
+    <!-- Memory Section -->
+    <div class="section" id="memory-section">
+      <div class="section-header">
+        <span class="toggle-icon">&#9660;</span>
+        <span class="section-title">Memory</span>
+        <span class="section-value" id="memory-value">--/--GB</span>
+      </div>
+      <div class="section-body">
+        <div class="progress-track">
+          <div class="progress-bar" id="memory-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GPU Section -->
+    <div class="section" id="gpu-section">
+      <div class="section-header">
+        <span class="toggle-icon">&#9660;</span>
+        <span class="section-title">GPU</span>
+        <span class="section-value" id="gpu-value">--%</span>
+      </div>
+      <div class="section-body">
+        <div class="progress-track">
+          <div class="progress-bar" id="gpu-bar"></div>
+        </div>
+        <div class="section-detail" id="gpu-name"></div>
+        <div class="section-detail" id="gpu-vram"></div>
+      </div>
+    </div>
+
+    <!-- Top Processes Section -->
+    <div class="section" id="processes-section">
+      <div class="section-header">
+        <span class="toggle-icon">&#9660;</span>
+        <span class="section-title">Top Processes</span>
+        <span class="section-value"></span>
+      </div>
+      <div class="section-body">
+        <ul id="process-list"></ul>
+      </div>
+    </div>
+  </div>
   <script src="main.js"></script>
 </body>
 </html>
