@@ -19,13 +19,47 @@ body {
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 16px;
-  height: 100vh;
-  overflow-y: auto;
+}
+
+#title-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.app-name {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  opacity: 0.3;
+  flex: 1;
+}
+
+#close-btn {
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  opacity: 0.3;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+
+#close-btn:hover {
+  opacity: 0.8;
+  color: #f5576c;
 }
 
 /* Sections */
 .section {
   margin-bottom: 12px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
 }
 
 .section-header {
@@ -64,7 +98,7 @@ body {
 }
 
 .section-body {
-  max-height: 200px;
+  max-height: 300px;
   opacity: 1;
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.2s ease;
@@ -102,10 +136,68 @@ body {
   transition: width 0.5s ease, background 0.5s ease;
 }
 
+/* GPU metric rows */
+.gpu-metric {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.gpu-metric-label {
+  font-size: 11px;
+  opacity: 0.5;
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.gpu-metric .progress-track {
+  flex: 1;
+  margin-top: 0;
+}
+
+.gpu-metric-value {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+  min-width: 50px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Sort tabs */
+.sort-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.sort-tab {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: #999;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sort-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ccc;
+}
+
+.sort-tab.active {
+  background: rgba(79, 172, 254, 0.2);
+  border-color: rgba(79, 172, 254, 0.3);
+  color: #4facfe;
+}
+
 /* Process list */
 #process-list {
   list-style: none;
-  margin-top: 4px;
 }
 
 #process-list li {
@@ -124,12 +216,14 @@ body {
   opacity: 0.8;
 }
 
-.proc-cpu {
+.proc-value {
   margin-left: 8px;
   color: #4facfe;
   font-variant-numeric: tabular-nums;
   font-weight: 500;
   flex-shrink: 0;
+  min-width: 60px;
+  text-align: right;
 }
 
 /* Scrollbar */

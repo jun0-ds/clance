@@ -24,6 +24,7 @@ struct ProcessInfo {
     name: String,
     cpu_usage: f32,
     memory_mb: f64,
+    gpu_memory_mb: f64,
     pid: u32,
 }
 
@@ -56,25 +57,72 @@ fn get_memory_info(state: State<AppState>) -> MemoryInfo {
     }
 }
 
+#[cfg(windows)]
+fn extract_gpu_mem_mb(mem: nvml_wrapper::enums::device::UsedGpuMemory) -> f64 {
+    match mem {
+        nvml_wrapper::enums::device::UsedGpuMemory::Used(bytes) => bytes as f64 / 1_048_576.0,
+        nvml_wrapper::enums::device::UsedGpuMemory::Unavailable => 0.0,
+    }
+}
+
+#[cfg(windows)]
+fn get_gpu_process_memory() -> std::collections::HashMap<u32, f64> {
+    use nvml_wrapper::Nvml;
+    let mut map = std::collections::HashMap::new();
+    let Ok(nvml) = Nvml::init() else { return map };
+    let Ok(device) = nvml.device_by_index(0) else { return map };
+    if let Ok(procs) = device.running_graphics_processes() {
+        for p in procs {
+            let mem_mb = extract_gpu_mem_mb(p.used_gpu_memory);
+            map.insert(p.pid, mem_mb);
+        }
+    }
+    if let Ok(procs) = device.running_compute_processes() {
+        for p in procs {
+            let mem_mb = extract_gpu_mem_mb(p.used_gpu_memory);
+            map.entry(p.pid).and_modify(|v| *v += mem_mb).or_insert(mem_mb);
+        }
+    }
+    map
+}
+
 #[tauri::command]
-fn get_top_processes(state: State<AppState>) -> Vec<ProcessInfo> {
+fn get_top_processes(state: State<AppState>, sort_by: String) -> Vec<ProcessInfo> {
     let mut sys = state.sys.lock().unwrap();
     sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+
+    #[cfg(windows)]
+    let gpu_mem = get_gpu_process_memory();
+    #[cfg(not(windows))]
+    let gpu_mem: std::collections::HashMap<u32, f64> = std::collections::HashMap::new();
+
     let mut procs: Vec<_> = sys
         .processes()
         .values()
-        .map(|p| ProcessInfo {
-            name: p.name().to_string_lossy().to_string(),
-            cpu_usage: p.cpu_usage(),
-            memory_mb: p.memory() as f64 / 1_048_576.0,
-            pid: p.pid().as_u32(),
+        .map(|p| {
+            let pid = p.pid().as_u32();
+            ProcessInfo {
+                name: p.name().to_string_lossy().to_string(),
+                cpu_usage: p.cpu_usage(),
+                memory_mb: p.memory() as f64 / 1_048_576.0,
+                gpu_memory_mb: gpu_mem.get(&pid).copied().unwrap_or(0.0),
+                pid,
+            }
         })
         .collect();
-    procs.sort_by(|a, b| {
-        b.cpu_usage
-            .partial_cmp(&a.cpu_usage)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+
+    match sort_by.as_str() {
+        "memory" => procs.sort_by(|a, b| {
+            b.memory_mb.partial_cmp(&a.memory_mb).unwrap_or(std::cmp::Ordering::Equal)
+        }),
+        "gpu" => procs.sort_by(|a, b| {
+            b.gpu_memory_mb.partial_cmp(&a.gpu_memory_mb).unwrap_or(std::cmp::Ordering::Equal)
+        }),
+        _ => procs.sort_by(|a, b| {
+            b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap_or(std::cmp::Ordering::Equal)
+        }),
+    }
+
     procs.truncate(5);
     procs
 }
@@ -144,7 +192,12 @@ fn main() {
         .manage(AppState {
             sys: Mutex::new(sys),
         })
-        .invoke_handler(tauri::generate_handler![get_cpu_info, get_memory_info, get_top_processes, get_gpu_info])
+        .invoke_handler(tauri::generate_handler![
+            get_cpu_info,
+            get_memory_info,
+            get_top_processes,
+            get_gpu_info
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

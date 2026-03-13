@@ -8,9 +8,13 @@
 </head>
 <body>
   <div id="widget" data-tauri-drag-region>
+    <div id="title-bar" data-tauri-drag-region>
+      <span class="app-name">Clance</span>
+      <button id="close-btn" title="Close">&times;</button>
+    </div>
     <!-- CPU Section -->
     <div class="section" id="cpu-section">
-      <div class="section-header">
+      <div class="section-header" data-section="cpu">
         <span class="toggle-icon">&#9660;</span>
         <span class="section-title">CPU</span>
         <span class="section-value" id="cpu-value">--%</span>
@@ -25,7 +29,7 @@
 
     <!-- Memory Section -->
     <div class="section" id="memory-section">
-      <div class="section-header">
+      <div class="section-header" data-section="memory">
         <span class="toggle-icon">&#9660;</span>
         <span class="section-title">Memory</span>
         <span class="section-value" id="memory-value">--/--GB</span>
@@ -39,28 +43,43 @@
 
     <!-- GPU Section -->
     <div class="section" id="gpu-section">
-      <div class="section-header">
+      <div class="section-header" data-section="gpu">
         <span class="toggle-icon">&#9660;</span>
         <span class="section-title">GPU</span>
         <span class="section-value" id="gpu-value">--%</span>
       </div>
       <div class="section-body">
-        <div class="progress-track">
-          <div class="progress-bar" id="gpu-bar"></div>
+        <div class="gpu-metric">
+          <span class="gpu-metric-label">Util</span>
+          <div class="progress-track">
+            <div class="progress-bar" id="gpu-util-bar"></div>
+          </div>
+          <span class="gpu-metric-value" id="gpu-util-value">--%</span>
+        </div>
+        <div class="gpu-metric">
+          <span class="gpu-metric-label">VRAM</span>
+          <div class="progress-track">
+            <div class="progress-bar" id="gpu-vram-bar"></div>
+          </div>
+          <span class="gpu-metric-value" id="gpu-vram-value">--</span>
         </div>
         <div class="section-detail" id="gpu-name"></div>
-        <div class="section-detail" id="gpu-vram"></div>
       </div>
     </div>
 
     <!-- Top Processes Section -->
     <div class="section" id="processes-section">
-      <div class="section-header">
+      <div class="section-header" data-section="processes">
         <span class="toggle-icon">&#9660;</span>
         <span class="section-title">Top Processes</span>
         <span class="section-value"></span>
       </div>
       <div class="section-body">
+        <div class="sort-tabs">
+          <button class="sort-tab active" data-sort="cpu">CPU</button>
+          <button class="sort-tab" data-sort="memory">MEM</button>
+          <button class="sort-tab" data-sort="gpu">GPU</button>
+        </div>
         <ul id="process-list"></ul>
       </div>
     </div>
