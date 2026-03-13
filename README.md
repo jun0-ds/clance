@@ -34,7 +34,16 @@ Built with [Tauri](https://tauri.app) for minimal resource footprint (~15MB RAM)
 
 ## Install
 
-Download the latest release from [GitHub Releases](https://github.com/jun0-ds/clance/releases).
+### Windows
+
+Download the latest `.exe` or `.msi` from [GitHub Releases](https://github.com/jun0-ds/clance/releases).
+
+### macOS (Homebrew)
+
+```bash
+brew tap jun0-ds/clance
+brew install --cask clance
+```
 
 ## Build from Source
 
