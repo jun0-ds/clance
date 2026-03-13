@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/nicoco007/tauri/dev-2/crates/tauri-utils/schema.json",
   "productName": "Clance",
   "version": "0.1.0",
-  "identifier": "com.clance.app",
+  "identifier": "com.clance.widget",
   "build": {
     "frontendDist": "../src",
     "devUrl": "http://localhost:1420"

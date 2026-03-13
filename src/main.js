@@ -1,8 +1,9 @@
 const { invoke } = window.__TAURI__.core;
-const { getCurrentWindow } = window.__TAURI__.window;
-const { LogicalSize } = window.__TAURI__.dpi;
+const { getCurrentWindow, currentMonitor } = window.__TAURI__.window;
+const { LogicalSize, LogicalPosition } = window.__TAURI__.dpi;
 
 const WIDGET_WIDTH = 300;
+const SNAP_DISTANCE = 20;
 let currentSort = 'cpu';
 
 function formatGb(gb) {
@@ -114,6 +115,54 @@ document.querySelectorAll('.sort-tab').forEach(tab => {
 document.getElementById('close-btn').addEventListener('click', () => {
   getCurrentWindow().close();
 });
+
+// Edge snapping
+let snapTimeout = null;
+getCurrentWindow().listen('tauri://move', () => {
+  if (snapTimeout) clearTimeout(snapTimeout);
+  snapTimeout = setTimeout(snapToEdge, 50);
+});
+
+async function snapToEdge() {
+  try {
+    const win = getCurrentWindow();
+    const monitor = await currentMonitor();
+    if (!monitor) return;
+
+    const pos = await win.outerPosition();
+    const size = await win.outerSize();
+    const scale = monitor.scaleFactor;
+
+    // Monitor work area (logical pixels)
+    const mx = monitor.position.x / scale;
+    const my = monitor.position.y / scale;
+    const mw = monitor.size.width / scale;
+    const mh = monitor.size.height / scale;
+
+    // Current position (physical → logical)
+    let x = pos.x / scale;
+    let y = pos.y / scale;
+    const w = size.width / scale;
+    const h = size.height / scale;
+
+    let snapped = false;
+
+    // Snap to left edge
+    if (Math.abs(x - mx) < SNAP_DISTANCE) { x = mx; snapped = true; }
+    // Snap to right edge
+    if (Math.abs((x + w) - (mx + mw)) < SNAP_DISTANCE) { x = mx + mw - w; snapped = true; }
+    // Snap to top edge
+    if (Math.abs(y - my) < SNAP_DISTANCE) { y = my; snapped = true; }
+    // Snap to bottom edge
+    if (Math.abs((y + h) - (mx + mh)) < SNAP_DISTANCE) { y = my + mh - h; snapped = true; }
+
+    if (snapped) {
+      await win.setPosition(new LogicalPosition(x, y));
+    }
+  } catch (e) {
+    // ignore snap errors
+  }
+}
 
 // Start polling
 update();

@@ -86,6 +86,33 @@ fn get_gpu_process_memory() -> std::collections::HashMap<u32, f64> {
     map
 }
 
+fn friendly_name(raw: &str) -> String {
+    let name = raw.strip_suffix(".exe").unwrap_or(raw);
+    match name.to_lowercase().as_str() {
+        "code" => "VS Code".into(),
+        "msedgewebview2" | "msedge" => "Edge".into(),
+        "chrome" => "Chrome".into(),
+        "firefox" => "Firefox".into(),
+        "discord" => "Discord".into(),
+        "slack" => "Slack".into(),
+        "spotify" => "Spotify".into(),
+        "explorer" => "Explorer".into(),
+        "dwm" => "Desktop Window Mgr".into(),
+        "searchhost" => "Windows Search".into(),
+        "runtimebroker" => "Runtime Broker".into(),
+        "memory compression" => "Mem Compression".into(),
+        "windowsterminal" => "Terminal".into(),
+        "powershell" => "PowerShell".into(),
+        "cmd" => "CMD".into(),
+        "claude" => "Claude".into(),
+        "teams" => "Teams".into(),
+        "notion" => "Notion".into(),
+        "obs64" | "obs" => "OBS".into(),
+        "steam" | "steamwebhelper" => "Steam".into(),
+        _ => name.to_string(),
+    }
+}
+
 #[tauri::command]
 fn get_top_processes(state: State<AppState>, sort_by: String) -> Vec<ProcessInfo> {
     let mut sys = state.sys.lock().unwrap();
@@ -96,18 +123,26 @@ fn get_top_processes(state: State<AppState>, sort_by: String) -> Vec<ProcessInfo
     #[cfg(not(windows))]
     let gpu_mem: std::collections::HashMap<u32, f64> = std::collections::HashMap::new();
 
-    let mut procs: Vec<_> = sys
-        .processes()
-        .values()
-        .map(|p| {
-            let pid = p.pid().as_u32();
-            ProcessInfo {
-                name: p.name().to_string_lossy().to_string(),
-                cpu_usage: p.cpu_usage(),
-                memory_mb: p.memory() as f64 / 1_048_576.0,
-                gpu_memory_mb: gpu_mem.get(&pid).copied().unwrap_or(0.0),
-                pid,
-            }
+    // Aggregate by friendly name
+    let mut aggregated: std::collections::HashMap<String, (f32, f64, f64)> =
+        std::collections::HashMap::new();
+    for p in sys.processes().values() {
+        let pid = p.pid().as_u32();
+        let name = friendly_name(&p.name().to_string_lossy());
+        let entry = aggregated.entry(name).or_insert((0.0, 0.0, 0.0));
+        entry.0 += p.cpu_usage();
+        entry.1 += p.memory() as f64 / 1_048_576.0;
+        entry.2 += gpu_mem.get(&pid).copied().unwrap_or(0.0);
+    }
+
+    let mut procs: Vec<_> = aggregated
+        .into_iter()
+        .map(|(name, (cpu, mem, gpu))| ProcessInfo {
+            name,
+            cpu_usage: cpu,
+            memory_mb: mem,
+            gpu_memory_mb: gpu,
+            pid: 0,
         })
         .collect();
 
