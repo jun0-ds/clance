@@ -18,6 +18,20 @@ Built with [Tauri](https://tauri.app) for minimal resource footprint (~15MB RAM)
 
 > **Note:** This is a personal desktop utility, not intended for server monitoring or enterprise use.
 
+## Comparison with Other Widgets
+
+| Feature | **Clance** | ResourceMonitor | Win11 Widget | Xbox Game Bar | Rainmeter |
+|---------|:---:|:---:|:---:|:---:|:---:|
+| CPU | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Memory | ✅ | ✅ | ✅ | ✅ | ✅ |
+| GPU Utilization | ✅ | ✅ | ✅ | ✅ | Skin-dependent |
+| GPU VRAM | ✅ | ❌ | ❌ | ❌ | Skin-dependent |
+| Top Processes | ✅ | ❌ | ❌ | ❌ | Skin-dependent |
+| Process Sort (CPU/MEM/GPU) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Friendly Process Names | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Cross-platform | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Lightweight Setup | ✅ | ✅ | ✅ | ✅ | ❌ |
+
 ## Install
 
 Download the latest release from [GitHub Releases](https://github.com/jun0-ds/clance/releases).
