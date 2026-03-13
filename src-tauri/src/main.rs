@@ -19,6 +19,14 @@ struct MemoryInfo {
     usage_percent: f64,
 }
 
+#[derive(Serialize, Clone)]
+struct ProcessInfo {
+    name: String,
+    cpu_usage: f32,
+    memory_mb: f64,
+    pid: u32,
+}
+
 struct AppState {
     sys: Mutex<System>,
 }
@@ -48,13 +56,36 @@ fn get_memory_info(state: State<AppState>) -> MemoryInfo {
     }
 }
 
+#[tauri::command]
+fn get_top_processes(state: State<AppState>) -> Vec<ProcessInfo> {
+    let mut sys = state.sys.lock().unwrap();
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+    let mut procs: Vec<_> = sys
+        .processes()
+        .values()
+        .map(|p| ProcessInfo {
+            name: p.name().to_string_lossy().to_string(),
+            cpu_usage: p.cpu_usage(),
+            memory_mb: p.memory() as f64 / 1_048_576.0,
+            pid: p.pid().as_u32(),
+        })
+        .collect();
+    procs.sort_by(|a, b| {
+        b.cpu_usage
+            .partial_cmp(&a.cpu_usage)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    procs.truncate(5);
+    procs
+}
+
 fn main() {
     let sys = System::new_all();
     tauri::Builder::default()
         .manage(AppState {
             sys: Mutex::new(sys),
         })
-        .invoke_handler(tauri::generate_handler![get_cpu_info, get_memory_info])
+        .invoke_handler(tauri::generate_handler![get_cpu_info, get_memory_info, get_top_processes])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
