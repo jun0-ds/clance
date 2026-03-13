@@ -111,7 +111,28 @@ document.querySelectorAll('.sort-tab').forEach(tab => {
   });
 });
 
-// Close button
+// Opacity slider
+const opacitySlider = document.getElementById('opacity-slider');
+opacitySlider.addEventListener('input', () => {
+  const val = opacitySlider.value / 100;
+  document.getElementById('widget').style.background = `rgba(20, 20, 30, ${val})`;
+});
+
+// Minimize to tray with animation
+document.getElementById('minimize-btn').addEventListener('click', async () => {
+  const widget = document.getElementById('widget');
+  widget.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+  widget.style.opacity = '0';
+  widget.style.transform = 'scale(0.8) translateY(20px)';
+  setTimeout(async () => {
+    await getCurrentWindow().hide();
+    widget.style.transition = 'none';
+    widget.style.opacity = '1';
+    widget.style.transform = '';
+  }, 200);
+});
+
+// Close (quit app)
 document.getElementById('close-btn').addEventListener('click', () => {
   getCurrentWindow().close();
 });

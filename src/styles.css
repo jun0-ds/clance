@@ -36,6 +36,34 @@ body {
   flex: 1;
 }
 
+#opacity-slider {
+  width: 40px;
+  height: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  outline: none;
+  opacity: 0.3;
+  transition: opacity 0.15s;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+#opacity-slider:hover {
+  opacity: 0.8;
+}
+
+#opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  cursor: pointer;
+}
+
+#minimize-btn,
 #close-btn {
   background: none;
   border: none;
@@ -46,6 +74,11 @@ body {
   padding: 0 4px;
   line-height: 1;
   transition: opacity 0.15s;
+}
+
+#minimize-btn:hover {
+  opacity: 0.8;
+  color: #4facfe;
 }
 
 #close-btn:hover {

@@ -3,7 +3,13 @@
 use serde::Serialize;
 use std::sync::Mutex;
 use sysinfo::System;
-use tauri::State;
+use tauri::{
+    State,
+    menu::{Menu, MenuItem},
+    tray::TrayIconBuilder,
+    Manager,
+    WebviewUrl, WebviewWindowBuilder,
+};
 
 #[derive(Serialize, Clone)]
 struct CpuInfo {
@@ -224,6 +230,13 @@ fn try_get_nvidia_gpu() -> Option<GpuInfo> {
 fn main() {
     let sys = System::new_all();
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            // When second instance launched, show existing window
+            if let Some(win) = app.get_webview_window("main") {
+                let _ = win.show();
+                let _ = win.set_focus();
+            }
+        }))
         .manage(AppState {
             sys: Mutex::new(sys),
         })
@@ -233,6 +246,58 @@ fn main() {
             get_top_processes,
             get_gpu_info
         ])
+        .setup(|app| {
+            let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+            let about = MenuItem::with_id(app, "about", "About Clance", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show, &about, &quit])?;
+
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .tooltip("Clance")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(win) = app.get_webview_window("main") {
+                            let _ = win.show();
+                            let _ = win.set_focus();
+                        }
+                    }
+                    "about" => {
+                        if let Some(win) = app.get_webview_window("about") {
+                            let _ = win.show();
+                            let _ = win.set_focus();
+                        } else {
+                            let _ = WebviewWindowBuilder::new(
+                                app,
+                                "about",
+                                WebviewUrl::App("about.html".into()),
+                            )
+                            .title("About Clance")
+                            .inner_size(280.0, 200.0)
+                            .resizable(false)
+                            .center()
+                            .build();
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
+                        if let Some(win) = tray.app_handle().get_webview_window("main") {
+                            let _ = win.show();
+                            let _ = win.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
