@@ -24,12 +24,14 @@ cargo tauri build  # production build → src-tauri/target/release/clance.exe
 
 Releases are automated via GitHub Actions. To publish a new version:
 
-1. **Update version** in `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`
-2. **Commit** the version bump
-3. **Tag and push**:
+1. **Bump version** (updates tauri.conf.json + Cargo.toml):
    ```bash
-   git tag v0.x.0
-   git push origin main --tags
+   ./scripts/bump-version.sh 0.x.0
+   ```
+2. **Commit and tag**:
+   ```bash
+   git add -A && git commit -m "v0.x.0"
+   git tag v0.x.0 && git push origin main --tags
    ```
 4. GitHub Actions will automatically:
    - Build for Windows (x86_64) and macOS (aarch64)

@@ -29,8 +29,13 @@
 </head>
 <body>
   <h1>Clance</h1>
-  <div class="version">v0.2.0</div>
+  <div class="version" id="version">v--</div>
   <div class="desc">Claude + Glance</div>
   <a href="https://github.com/jun0-ds/clance" target="_blank">github.com/jun0-ds/clance</a>
+  <script>
+    window.__TAURI__.app.getVersion().then(v => {
+      document.getElementById('version').textContent = 'v' + v;
+    });
+  </script>
 </body>
 </html>
