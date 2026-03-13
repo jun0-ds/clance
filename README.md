@@ -5,6 +5,8 @@
 ![Windows](https://img.shields.io/badge/Windows-0078D6?logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=white)
 
+![Clance Screenshot](docs/screenshot.png)
+
 Clance is a desktop widget that shows your system's vital signs at a glance:
 
 - **CPU** usage with per-core details
