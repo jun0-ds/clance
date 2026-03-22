@@ -14,11 +14,11 @@ function setBar(id, percent) {
   const el = document.getElementById(id);
   el.style.width = Math.min(100, percent) + '%';
   if (percent > 80) {
-    el.style.background = 'linear-gradient(90deg, #f5576c, #ff6b6b)';
+    el.style.background = '#bf616a';
   } else if (percent > 60) {
-    el.style.background = 'linear-gradient(90deg, #f093fb, #f5576c)';
+    el.style.background = '#ebcb8b';
   } else {
-    el.style.background = 'linear-gradient(90deg, #4facfe, #00f2fe)';
+    el.style.background = '#88c0d0';
   }
 }
 
@@ -115,7 +115,7 @@ document.querySelectorAll('.sort-tab').forEach(tab => {
 const opacitySlider = document.getElementById('opacity-slider');
 opacitySlider.addEventListener('input', () => {
   const val = opacitySlider.value / 100;
-  document.getElementById('widget').style.background = `rgba(20, 20, 30, ${val})`;
+  document.getElementById('widget').style.background = `rgba(46, 52, 64, ${val})`;
 });
 
 // Minimize to tray with animation
