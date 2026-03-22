@@ -272,3 +272,65 @@ body {
   background: rgba(216, 222, 233, 0.1);
   border-radius: 2px;
 }
+
+/* Mode toggle */
+#mode-toggle {
+  background: rgba(216, 222, 233, 0.06);
+  border: 1px solid rgba(216, 222, 233, 0.08);
+  border-radius: 4px;
+  color: #d8dee9;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  cursor: pointer;
+  margin-right: 4px;
+  transition: all 0.15s;
+}
+
+#mode-toggle:hover {
+  background: rgba(216, 222, 233, 0.12);
+  color: #eceff4;
+}
+
+#mode-toggle.active {
+  background: rgba(163, 190, 140, 0.2);
+  border-color: rgba(163, 190, 140, 0.3);
+  color: #a3be8c;
+}
+
+/* Panels layout */
+#panels {
+  display: flex;
+  gap: 16px;
+}
+
+#panel-system {
+  flex: 0 0 268px;
+  min-width: 0;
+}
+
+#panel-ai {
+  flex: 1;
+  min-width: 0;
+  border-left: 1px solid rgba(216, 222, 233, 0.06);
+  padding-left: 16px;
+}
+
+#panel-ai.hidden {
+  display: none;
+}
+
+/* AI panel styles */
+.ai-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #a3be8c;
+  margin-bottom: 12px;
+}
+
+.ai-loading {
+  font-size: 11px;
+  color: #4c566a;
+}

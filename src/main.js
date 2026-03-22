@@ -2,8 +2,10 @@ const { invoke } = window.__TAURI__.core;
 const { getCurrentWindow, currentMonitor } = window.__TAURI__.window;
 const { LogicalSize, LogicalPosition } = window.__TAURI__.dpi;
 
-const WIDGET_WIDTH = 300;
+const SIMPLE_WIDTH = 300;
+const DETAILED_WIDTH = 600;
 const SNAP_DISTANCE = 20;
+let detailedMode = false;
 let currentSort = 'cpu';
 
 function formatGb(gb) {
@@ -76,8 +78,9 @@ async function updateProcesses() {
 async function resizeToContent() {
   const widget = document.getElementById('widget');
   const height = widget.scrollHeight;
+  const width = detailedMode ? DETAILED_WIDTH : SIMPLE_WIDTH;
   try {
-    await getCurrentWindow().setSize(new LogicalSize(WIDGET_WIDTH, height));
+    await getCurrentWindow().setSize(new LogicalSize(width, height));
   } catch (e) {
     // ignore resize errors
   }
@@ -109,6 +112,18 @@ document.querySelectorAll('.sort-tab').forEach(tab => {
     currentSort = tab.dataset.sort;
     updateProcesses().then(resizeToContent);
   });
+});
+
+// Mode toggle
+const modeToggle = document.getElementById('mode-toggle');
+const panelAi = document.getElementById('panel-ai');
+
+modeToggle.addEventListener('click', async () => {
+  detailedMode = !detailedMode;
+  modeToggle.textContent = detailedMode ? 'D' : 'S';
+  modeToggle.classList.toggle('active', detailedMode);
+  panelAi.classList.toggle('hidden', !detailedMode);
+  await resizeToContent();
 });
 
 // Opacity slider
