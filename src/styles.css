@@ -334,3 +334,23 @@ body {
   font-size: 11px;
   color: #4c566a;
 }
+
+/* AI panel content */
+.ai-today { margin-bottom: 12px; }
+.ai-today-label { font-size: 11px; color: #4c566a; margin-bottom: 4px; }
+.ai-today-total { font-size: 20px; font-weight: 700; color: #eceff4; font-variant-numeric: tabular-nums; }
+.ai-model-row { display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; color: #d8dee9; }
+.ai-model-tokens { font-variant-numeric: tabular-nums; color: #a3be8c; }
+.ai-stats { font-size: 11px; color: #4c566a; margin: 8px 0 12px; }
+.ai-trend-title, .ai-sessions-title { font-size: 11px; color: #4c566a; margin-bottom: 6px; }
+.ai-sessions-title { margin-top: 12px; }
+
+/* Sparkline */
+.sparkline { display: flex; align-items: flex-end; gap: 4px; height: 32px; margin-bottom: 4px; }
+.sparkline-bar { flex: 1; background: #a3be8c; border-radius: 2px 2px 0 0; min-height: 2px; transition: height 0.3s ease; }
+.sparkline-labels { display: flex; gap: 4px; font-size: 9px; color: #4c566a; }
+.sparkline-labels span { flex: 1; text-align: center; }
+
+/* Session rows */
+.ai-session-row { display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; color: #d8dee9; }
+.ai-session-tokens { font-variant-numeric: tabular-nums; color: #a3be8c; }

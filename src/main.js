@@ -114,6 +114,75 @@ document.querySelectorAll('.sort-tab').forEach(tab => {
   });
 });
 
+// AI panel functions
+function formatTokens(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n.toString();
+}
+
+async function updateAiSummary() {
+  try {
+    const data = await invoke('get_ai_usage_summary');
+    if (!data.available) {
+      document.getElementById('ai-content').innerHTML = '<div class="ai-loading">Claude Code not detected</div>';
+      return;
+    }
+    document.getElementById('ai-total').textContent = formatTokens(data.total_tokens_today);
+    document.getElementById('ai-models').innerHTML = data.models
+      .map(m => `<div class="ai-model-row"><span>${m.model}</span><span class="ai-model-tokens">${formatTokens(m.tokens)}</span></div>`)
+      .join('');
+    document.getElementById('ai-stats').textContent = `Sessions: ${data.session_count}  Msgs: ${data.message_count}`;
+  } catch (e) {
+    console.error('AI summary error:', e);
+  }
+}
+
+async function updateAiHistory() {
+  try {
+    const data = await invoke('get_ai_usage_history');
+    if (!data.available) return;
+
+    // Sparkline
+    const maxTokens = Math.max(...data.daily_tokens.map(d => d.total_tokens), 1);
+    document.getElementById('ai-sparkline').innerHTML = data.daily_tokens
+      .map(d => {
+        const h = Math.max(2, (d.total_tokens / maxTokens) * 32);
+        return `<div class="sparkline-bar" style="height:${h}px"></div>`;
+      }).join('');
+
+    // Day labels
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    document.getElementById('ai-sparkline-labels').innerHTML = data.daily_tokens
+      .map(d => {
+        const day = new Date(d.date + 'T00:00:00').getDay();
+        return `<span>${dayNames[day]}</span>`;
+      }).join('');
+
+    // Recent sessions
+    document.getElementById('ai-sessions').innerHTML = data.recent_sessions
+      .map(s => `<div class="ai-session-row"><span>${s.project}</span><span class="ai-session-tokens">${formatTokens(s.total_tokens)}</span></div>`)
+      .join('');
+  } catch (e) {
+    console.error('AI history error:', e);
+  }
+}
+
+let aiSummaryInterval = null;
+let aiHistoryInterval = null;
+
+function startAiPolling() {
+  updateAiSummary();
+  updateAiHistory();
+  aiSummaryInterval = setInterval(updateAiSummary, 30000);
+  aiHistoryInterval = setInterval(updateAiHistory, 300000);
+}
+
+function stopAiPolling() {
+  if (aiSummaryInterval) { clearInterval(aiSummaryInterval); aiSummaryInterval = null; }
+  if (aiHistoryInterval) { clearInterval(aiHistoryInterval); aiHistoryInterval = null; }
+}
+
 // Mode toggle
 const modeToggle = document.getElementById('mode-toggle');
 const panelAi = document.getElementById('panel-ai');
@@ -123,6 +192,13 @@ modeToggle.addEventListener('click', async () => {
   modeToggle.textContent = detailedMode ? 'D' : 'S';
   modeToggle.classList.toggle('active', detailedMode);
   panelAi.classList.toggle('hidden', !detailedMode);
+
+  if (detailedMode) {
+    startAiPolling();
+  } else {
+    stopAiPolling();
+  }
+
   await resizeToContent();
 });
 
