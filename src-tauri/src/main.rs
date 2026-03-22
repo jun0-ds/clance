@@ -178,6 +178,41 @@ struct GpuInfo {
     available: bool,
 }
 
+#[derive(Serialize, Clone)]
+struct AiUsageSummary {
+    total_tokens_today: u64,
+    models: Vec<AiModelUsage>,
+    session_count: u32,
+    message_count: u32,
+    available: bool,
+}
+
+#[derive(Serialize, Clone)]
+struct AiModelUsage {
+    model: String,
+    tokens: u64,
+}
+
+#[derive(Serialize, Clone)]
+struct AiUsageHistory {
+    daily_tokens: Vec<DailyTokens>,
+    recent_sessions: Vec<AiSessionInfo>,
+    available: bool,
+}
+
+#[derive(Serialize, Clone)]
+struct DailyTokens {
+    date: String,
+    total_tokens: u64,
+}
+
+#[derive(Serialize, Clone)]
+struct AiSessionInfo {
+    project: String,
+    total_tokens: u64,
+    message_count: u32,
+}
+
 #[tauri::command]
 fn get_gpu_info() -> GpuInfo {
     #[cfg(windows)]
@@ -227,6 +262,168 @@ fn try_get_nvidia_gpu() -> Option<GpuInfo> {
     })
 }
 
+fn shorten_model_name(name: &str) -> String {
+    if name.contains("opus") { return "opus".into(); }
+    if name.contains("sonnet") { return "sonnet".into(); }
+    if name.contains("haiku") { return "haiku".into(); }
+    name.split('-').find(|s| !s.chars().all(|c| c.is_ascii_digit())).unwrap_or(name).to_string()
+}
+
+#[tauri::command]
+fn get_ai_usage_summary() -> AiUsageSummary {
+    let empty = AiUsageSummary {
+        total_tokens_today: 0,
+        models: vec![],
+        session_count: 0,
+        message_count: 0,
+        available: false,
+    };
+
+    let Some(home) = dirs::home_dir() else { return empty };
+    let stats_path = home.join(".claude").join("stats-cache.json");
+    let Ok(content) = std::fs::read_to_string(&stats_path) else { return empty };
+    let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) else { return empty };
+
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+    // Find today's activity
+    let mut session_count = 0u32;
+    let mut message_count = 0u32;
+    if let Some(daily) = json["dailyActivity"].as_array() {
+        for day in daily {
+            if day["date"].as_str() == Some(&today) {
+                session_count = day["sessionCount"].as_u64().unwrap_or(0) as u32;
+                message_count = day["messageCount"].as_u64().unwrap_or(0) as u32;
+                break;
+            }
+        }
+    }
+
+    // Find today's token usage by model
+    let mut models = Vec::new();
+    let mut total_tokens_today = 0u64;
+    if let Some(daily_tokens) = json["dailyModelTokens"].as_array() {
+        for day in daily_tokens {
+            if day["date"].as_str() == Some(&today) {
+                if let Some(by_model) = day["tokensByModel"].as_object() {
+                    for (model_name, tokens) in by_model {
+                        let t = tokens.as_u64().unwrap_or(0);
+                        total_tokens_today += t;
+                        let short = shorten_model_name(model_name);
+                        models.push(AiModelUsage { model: short, tokens: t });
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    models.sort_by(|a, b| b.tokens.cmp(&a.tokens));
+
+    AiUsageSummary {
+        total_tokens_today,
+        models,
+        session_count,
+        message_count,
+        available: true,
+    }
+}
+
+#[tauri::command]
+fn get_ai_usage_history() -> AiUsageHistory {
+    let empty = AiUsageHistory {
+        daily_tokens: vec![],
+        recent_sessions: vec![],
+        available: false,
+    };
+
+    let Some(home) = dirs::home_dir() else { return empty };
+    let claude_dir = home.join(".claude");
+
+    // 1. Daily tokens from stats-cache.json (already aggregated)
+    let mut daily_tokens = Vec::new();
+    let stats_path = claude_dir.join("stats-cache.json");
+    if let Ok(content) = std::fs::read_to_string(&stats_path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            if let Some(daily_model_tokens) = json["dailyModelTokens"].as_array() {
+                for day in daily_model_tokens {
+                    let date = day["date"].as_str().unwrap_or("").to_string();
+                    let mut total = 0u64;
+                    if let Some(by_model) = day["tokensByModel"].as_object() {
+                        for (_model, tokens) in by_model {
+                            total += tokens.as_u64().unwrap_or(0);
+                        }
+                    }
+                    daily_tokens.push(DailyTokens { date, total_tokens: total });
+                }
+            }
+        }
+    }
+    // Keep last 7 days only
+    if daily_tokens.len() > 7 {
+        daily_tokens = daily_tokens.split_off(daily_tokens.len() - 7);
+    }
+
+    // 2. Recent sessions from JSONL files (scan by file modification time)
+    let mut recent_sessions = Vec::new();
+    let projects_dir = claude_dir.join("projects");
+    if let Ok(project_entries) = std::fs::read_dir(&projects_dir) {
+        let mut session_files: Vec<(String, std::path::PathBuf, std::time::SystemTime)> = Vec::new();
+        for project_entry in project_entries.flatten() {
+            let project_name = project_entry.file_name().to_string_lossy().to_string();
+            if let Ok(files) = std::fs::read_dir(project_entry.path()) {
+                for file in files.flatten() {
+                    let path = file.path();
+                    if path.extension().map(|e| e == "jsonl").unwrap_or(false) {
+                        if let Ok(meta) = file.metadata() {
+                            if let Ok(modified) = meta.modified() {
+                                session_files.push((project_name.clone(), path, modified));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Sort by most recently modified
+        session_files.sort_by(|a, b| b.2.cmp(&a.2));
+        session_files.truncate(5);
+
+        for (project, path, _modified) in session_files {
+            let mut total_tokens = 0u64;
+            let mut message_count = 0u32;
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                for line in content.lines() {
+                    if let Ok(val) = serde_json::from_str::<serde_json::Value>(line) {
+                        if val["type"].as_str() == Some("assistant") {
+                            message_count += 1;
+                            if let Some(usage) = val["message"]["usage"].as_object() {
+                                total_tokens += usage.get("input_tokens")
+                                    .and_then(|v| v.as_u64()).unwrap_or(0);
+                                total_tokens += usage.get("output_tokens")
+                                    .and_then(|v| v.as_u64()).unwrap_or(0);
+                            }
+                        }
+                    }
+                }
+            }
+            // Decode project name: "c--Dev" -> "c:/Dev", take last segment
+            let display = project.replace("--", ":/");
+            let short = display.split('/').last().unwrap_or(&display).to_string();
+            recent_sessions.push(AiSessionInfo {
+                project: short,
+                total_tokens,
+                message_count,
+            });
+        }
+    }
+
+    AiUsageHistory {
+        daily_tokens,
+        recent_sessions,
+        available: true,
+    }
+}
+
 fn main() {
     let sys = System::new_all();
     tauri::Builder::default()
@@ -244,7 +441,9 @@ fn main() {
             get_cpu_info,
             get_memory_info,
             get_top_processes,
-            get_gpu_info
+            get_gpu_info,
+            get_ai_usage_summary,
+            get_ai_usage_history
         ])
         .setup(|app| {
             let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
