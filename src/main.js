@@ -133,6 +133,7 @@ async function updateAiSummary() {
       .map(m => `<div class="ai-model-row"><span>${m.model}</span><span class="ai-model-tokens">${formatTokens(m.tokens)}</span></div>`)
       .join('');
     document.getElementById('ai-stats').textContent = `Sessions: ${data.session_count}  Msgs: ${data.message_count}`;
+    await resizeToContent();
   } catch (e) {
     console.error('AI summary error:', e);
   }
@@ -163,6 +164,7 @@ async function updateAiHistory() {
     document.getElementById('ai-sessions').innerHTML = data.recent_sessions
       .map(s => `<div class="ai-session-row"><span>${s.project}</span><span class="ai-session-tokens">${formatTokens(s.total_tokens)}</span></div>`)
       .join('');
+    await resizeToContent();
   } catch (e) {
     console.error('AI history error:', e);
   }
@@ -192,6 +194,8 @@ modeToggle.addEventListener('click', async () => {
   modeToggle.textContent = detailedMode ? 'D' : 'S';
   modeToggle.classList.toggle('active', detailedMode);
   panelAi.classList.toggle('hidden', !detailedMode);
+
+  localStorage.setItem('clance-mode', detailedMode ? 'detailed' : 'simple');
 
   if (detailedMode) {
     startAiPolling();
@@ -274,6 +278,12 @@ async function snapToEdge() {
   } catch (e) {
     // ignore snap errors
   }
+}
+
+// Restore saved mode preference
+const savedMode = localStorage.getItem('clance-mode');
+if (savedMode === 'detailed') {
+  modeToggle.click();
 }
 
 // Start polling
