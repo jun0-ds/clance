@@ -56,4 +56,4 @@ cargo tauri build  # production build
 
 ## License
 
-MIT
+BSD 3-Clause — see `LICENSE`.
